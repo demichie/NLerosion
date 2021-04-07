@@ -45,7 +45,7 @@ c2 = 0.0    # no tilting along the axis orthogonal to the line alfa=0
 # Now set up model input
 # X, Y, h have been built already
 
-final_time = 10.0   # final time in kilo years
+final_time = 100.0   # final time in kilo years
 
 delta_t_max = 10.00  # maximum time step
 delta_t0 = 0.01      # initial time step
@@ -55,7 +55,7 @@ cr_angle = 33.0      # critical slope in degrees
 enne = 2             # exponent for the nonlinearity of the model
                      # enne = inf  gives a linear model
 
-k = 1.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
+k = 10.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
                      # the time unit is the same of the parameter 'final_time'
 
 max_nlc = 10.0       # maximum value of the nonlinear coefficient
@@ -77,7 +77,7 @@ gr = -100.0
 grow_rates = [ gr, gr, gr, gr]  # rate of change at the boundaries
                              # Used only when the b.c. is 'T'
 
-n_output = 3  # number of output plotted
+n_output = 10  # number of output plotted
 
 
 

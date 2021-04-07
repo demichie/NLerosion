@@ -52,8 +52,8 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
             else:
             
                 h[j,i] = h3
-            
-
+       
+    
     # diffusion coefficient
 
     # there are 5 regions defined:

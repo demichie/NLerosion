@@ -1,6 +1,7 @@
 def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     enne, k, max_nlc, max_inner_iter, res , bc, grow_rate ,        \
-    run_name , n_output , A_c , verbose_level, save_output_flag):
+    run_name , n_output , A_c , verbose_level, save_output_flag,   \
+    plot_output_flag):
 
 
     # EROSIONL This function solve for the nonlinear diffusion problem 
@@ -55,6 +56,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     from advance_time import advance_time
     from nonlinear_function import nonlinear_function
     from make_plot import make_plot
+    import netCDF4 
 
     nx = h.shape[0]
     ny = h.shape[1]
@@ -78,18 +80,71 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     h_init = h
 
+    if ( plot_output_flag ):
 
-    plt.ion()
+        plt.ion()
     
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
 
-    make_plot(X,Y,h,h-h_init,ax)
-
-    if ( save_output_flag):
+        make_plot(X,Y,h,h-h_init,ax)
 
         frame_name = run_name + '_{0:03}'.format(0) + '.png'
         plt.savefig(frame_name,dpi=200)
+
+
+    if ( save_output_flag):
+
+        # Save initial topography on ascii raster file
+        header = "ncols     %s\n" % h.shape[1]
+        header += "nrows    %s\n" % h.shape[0]
+        header += "xllcenter " + str(np.amin(X)) +"\n"
+        header += "yllcenter " + str(np.amin(Y)) +"\n"
+        header += "cellsize " + str(np.abs(X[1,2]-X[1,1])) +"\n"
+        header += "NODATA_value -9999\n"
+
+        output_full = run_name + '_{0:03}'.format(0) + '.asc'
+
+        np.savetxt(output_full, np.flipud(h), header=header, fmt='%1.5f',comments='')
+
+
+    # create netcdf4 file
+    ncfilename = run_name+'.nc'
+
+    ncfile = netCDF4.Dataset(ncfilename,mode='w',format='NETCDF4') 
+
+    x_dim = ncfile.createDimension('x', nx) 
+    y_dim = ncfile.createDimension('y', ny) 
+    time_dim = ncfile.createDimension('time', None) # unlimited axis (can be appended to).
+
+    ncfile.title = run_name+' output'
+
+    ncfile.Conventions = "CF-1.0"
+    ncfile.subtitle="My model data subtitle"
+    ncfile.anything="write anything"
+
+
+    x = ncfile.createVariable('x', np.float64, ('x',),zlib=True)
+    x.long_name = 'x dim'
+    x.units = 'meters'
+
+    y = ncfile.createVariable('y', np.float64, ('y',),zlib=True)
+    y.long_name = 'y dim'
+    y.units = 'meters'
+
+    time = ncfile.createVariable('time', np.float64, ('time',))
+    time.long_name = 'Time'
+    time.units = 'seconds'
+
+    z = ncfile.createVariable('z',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
+    z.standard_name = 'flow thickness' # this is a CF standard name
+    z.units = 'meters' # degrees Kelvin
+
+    time[iter] = simtime
+    z[iter,:,:] = h
+
+    x[:] = X[0,:]
+    y[:] = Y[:,0]
 
     delta_x = np.abs(X[1,2]-X[1,1])
     delta_y = np.abs(Y[2,1]-Y[1,1])
@@ -252,8 +307,10 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     
         simtime = simtime + delta_t
     
-        print('Time = ' + str(simtime) + ' delta_t = ' + str(delta_t) + ' err = ' + str(err))
-        
+        # print('Time = ' + str(simtime) + ' delta_t = ' + str(delta_t) + ' err = ' + str(err))
+
+        print('Time = %.5f delta_t = %.5f err = %.3f' % (simtime,delta_t,err))        
+
         h_x,h_y = np.gradient(h,delta_x,delta_y)
 
         grad_h = np.sqrt( h_x**2 + h_y**2 )
@@ -272,15 +329,40 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
         if ( simtime >= iteration_draw_times[iter] ):
             
             iter += 1
+            print('Saving output '+str(iter))
+
+            # add output to netcdf file
+            time[iter] = simtime
+            z[iter,:,:] = h
+
             
-            make_plot(X,Y,h_temp_half,h_temp_half-h_init,ax)
-            
-            if ( save_output_flag):
-                
+            if ( plot_output_flag):
+
+                make_plot(X,Y,h_temp_half,h_temp_half-h_init,ax)
+                            
                 frame_name = run_name + '_{0:03}'.format(iter) + '.png'
                 plt.savefig(frame_name,dpi=200)
-                
- 
+
+
+
+            if ( save_output_flag):
+
+                # Save topography on ascii raster file
+                header = "ncols     %s\n" % h.shape[1]
+                header += "nrows    %s\n" % h.shape[0]
+                header += "xllcenter " + str(np.amin(X)) +"\n"
+                header += "yllcenter " + str(np.amin(Y)) +"\n"
+                header += "cellsize " + str(np.abs(X[1,2]-X[1,1])) +"\n"
+                header += "NODATA_value -9999\n"
+
+                output_full = run_name + '_{0:03}'.format(iter) + '.asc'
+                print('Saving ascii rater file '+output_full)
+
+                np.savetxt(output_full, np.flipud(h), header=header, fmt='%1.5f',comments='')
+
+                 
+    ncfile.close(); print('Dataset is closed!')
+
 
     h_new[0:nx,0:ny] = h[0:nx,0:ny]
 
