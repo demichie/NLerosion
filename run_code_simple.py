@@ -1,6 +1,7 @@
 import numpy as np
 from cinder_cone_and_k import cinder_cone_and_k
 from ErosioNL import ErosioNL
+from read_asc import read_asc
 
 # Script to run the non linear diffusion code on various initial forms
 # 2D non linear diffusion code is by 
@@ -8,7 +9,6 @@ from ErosioNL import ErosioNL
 # April 20, 2016
 
 run_name = 'synthetic_cone'
-
 
 # First, build an initial form
 
@@ -21,6 +21,24 @@ y_min = x_min
 delta_y = delta_x
 y_max = x_max 
 [X, Y, h, k] = cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max)
+
+# Topography from ascii raster file
+# ascii_file = 'synthetic_cone_init.asc'
+# [X, Y, h, k,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
+
+
+# Save initial topography on ascii raster file
+header = "ncols     %s\n" % h.shape[1]
+header += "nrows    %s\n" % h.shape[0]
+header += "xllcenter " + str(x_min) +"\n"
+header += "yllcenter " + str(y_min) +"\n"
+header += "cellsize " + str(delta_x) +"\n"
+header += "NODATA_value -9999\n"
+
+output_full = run_name + '_init.asc'
+
+np.savetxt(output_full, np.flipud(h), header=header, fmt='%1.5f',comments='')
+print(output_full+' saved')
 
 
 # Initialize the mask defining the region to uplift/depression and/or tilt 
@@ -55,7 +73,7 @@ cr_angle = 33.0      # critical slope in degrees
 enne = 2             # exponent for the nonlinearity of the model
                      # enne = inf  gives a linear model
 
-k = 10.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
+k = 1.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
                      # the time unit is the same of the parameter 'final_time'
 
 max_nlc = 10.0       # maximum value of the nonlinear coefficient
@@ -93,10 +111,12 @@ A_c = A_c0 + A_c1 + A_c2
 
 
 verbose_level = 0   # level of output on screen (>1 for debug purposes)
+plot_output_flag = 0
 save_output_flag = 1
 
 ( h_new , h_diff , time_iter , max_angle , mean_angle  ) =       \
     ErosioNL(X,Y,h,final_time,delta_t_max,delta_t0,              \
     cr_angle,enne,k,max_nlc,max_inner_iter, res, bc, grow_rates, \
-    run_name , n_output , A_c , verbose_level,save_output_flag)
+    run_name , n_output , A_c , verbose_level,save_output_flag,  \
+     plot_output_flag)
 
