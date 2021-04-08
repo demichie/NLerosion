@@ -17,8 +17,7 @@ def advance_time( h_init , h_old , delta_t , delta_x , delta_y ,
     import numpy as np
     from nonlinear_function import nonlinear_function
     from numerical_fluxes import numerical_fluxes
-    # from tdma import tdma
-    # import scipy.sparse
+
     
     nx = h_init.shape[0]
     ny = h_init.shape[1]
@@ -61,7 +60,7 @@ def advance_time( h_init , h_old , delta_t , delta_x , delta_y ,
         
         f = nonlinear_function(h_temp,delta_x,delta_y,S_c,enne,k,max_nlc)
     
-        # Evaluate the exlicit term (the right-hand side of the linear system
+        # Evaluate the explicit term (the right-hand side of the linear system
         # for the diffusion in the x-direction)
         
         flux_temp_east,flux_temp_west,flux_temp_north,flux_temp_south = \
@@ -131,8 +130,7 @@ def advance_time( h_init , h_old , delta_t , delta_x , delta_y ,
             ax[nx-1] = 0.0   # these coefficients are defined in order to impose
             bx[nx-1] = 1.0   # the Dirichlet boundary condition
             dx[nx-1] = 0.0   # boundary condition
-        
-    
+            
         if ( Dirichlet[3] ) or ( Transient[3] ):
         
             last_row = ny-1
@@ -173,11 +171,9 @@ def advance_time( h_init , h_old , delta_t , delta_x , delta_y ,
             
                dx[nx-1] = expl_term[nx-1,j]
           
-            # A = scipy.sparse.spdiags(np.vstack((ax, bx, cx)),
-            #                          [-1, 0, 1], nx, nx).todense()
-            # w[0:nx,j] = tdma(A, dx)
-        
-            w[0:nx,j] = TDMAsolver(ax,bx,cx,dx)
+            # call the tridiagonal solver        
+            # w[0:nx,j] = TDMAsolver(ax,bx,cx,dx)
+            w[0:nx,j] = NEWsolver(ax,bx,cx,dx)
         
    
         # Solve in the y-direction
@@ -272,18 +268,15 @@ def advance_time( h_init , h_old , delta_t , delta_x , delta_y ,
             
                 dy[ny-1] = w[i,ny-1]
             
-            # A = scipy.sparse.spdiags(np.vstack((ay, by, cy)),
-            #                          [-1, 0, 1], ny, ny).todense()
-            # v[i,0:ny] = tdma(A, dy)
-
-            v[i,0:ny] = TDMAsolver(ay,by,cy,dy)
+            # call the tridiagonal solver 
+            # v[i,0:ny] = TDMAsolver(ay,by,cy,dy)
+            v[i,0:ny] = NEWsolver(ay,by,cy,dy)
         
         residual = np.maximum(np.abs(v.min()), np.abs(v.max()) ) 
     
         if ( verbose_level >= 3 ):
 
             print('Inner loop. Iter = ' + str(i) + ' residual = ' + str(residual))
-
 
     
         h_temp[first_column:last_column,first_row:last_row] +=   \
@@ -299,6 +292,19 @@ def advance_time( h_init , h_old , delta_t , delta_x , delta_y ,
 
     return [h_new[0:nx,0:ny],residual]
 
+def NEWsolver(a,b,c,d):
+
+    import numpy as np
+    import scipy.linalg as la
+
+    # Create arrays and set values
+    m = b.size
+    ab = np.zeros((3,m))
+    ab[0] = a
+    ab[1] = b
+    ab[2] = c
+
+    return la.solve_banded ((1,1),ab,d)
 
 def TDMAsolver(a,b,c,d):
 

@@ -8,23 +8,24 @@ from read_asc import read_asc
 # Mattia de' Michieli Vitturi (Istituto Nazionale di Geofisica e Vulcanologia)
 # April 20, 2016
 
-run_name = 'synthetic_cone'
+run_name = 'sp_crater'
 
 # First, build an initial form
 
 # Synthetic cinder cone (Hooper & Sheridan):
 
-x_min = -500.0
-delta_x = 10.0
-x_max = 500.0
-y_min = x_min
-delta_y = delta_x
-y_max = x_max 
-[X, Y, h, k] = cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max)
+# x_min = -500.0
+# delta_x = 10.0
+# x_max = 500.0
+# y_min = x_min
+# delta_y = delta_x
+# y_max = x_max 
+# [X, Y, h, k] = cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max)
 
 # Topography from ascii raster file
-# ascii_file = 'synthetic_cone_init.asc'
-# [X, Y, h, k,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
+
+ascii_file = 'sp_crater.asc'
+[X, Y, h, x_min, x_max, delta_x, y_min, y_max, delta_y] = read_asc(ascii_file)
 
 
 # Save initial topography on ascii raster file
@@ -63,7 +64,7 @@ c2 = 0.0    # no tilting along the axis orthogonal to the line alfa=0
 # Now set up model input
 # X, Y, h have been built already
 
-final_time = 100.0   # final time in kilo years
+final_time = 250.0   # final time in kilo years
 
 delta_t_max = 10.00  # maximum time step
 delta_t0 = 0.01      # initial time step
@@ -95,7 +96,7 @@ gr = -100.0
 grow_rates = [ gr, gr, gr, gr]  # rate of change at the boundaries
                              # Used only when the b.c. is 'T'
 
-n_output = 10  # number of output plotted
+n_output = 20  # number of output plotted
 
 
 

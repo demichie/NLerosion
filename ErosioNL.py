@@ -57,6 +57,8 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     from nonlinear_function import nonlinear_function
     from make_plot import make_plot
     import netCDF4 
+    import time
+    import sys
 
     nx = h.shape[0]
     ny = h.shape[1]
@@ -66,8 +68,6 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     h_temp = np.zeros((nx,ny))
     h_temp_half = np.zeros((nx,ny))
     h_temp_full = np.zeros((nx,ny))
-
-
 
     if ( np.isscalar(k) ):
     
@@ -132,15 +132,15 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     y.long_name = 'y dim'
     y.units = 'meters'
 
-    time = ncfile.createVariable('time', np.float64, ('time',))
-    time.long_name = 'Time'
-    time.units = 'seconds'
+    t = ncfile.createVariable('time', np.float64, ('time',))
+    t.long_name = 'Time'
+    t.units = 'seconds'
 
     z = ncfile.createVariable('z',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
     z.standard_name = 'flow thickness' # this is a CF standard name
     z.units = 'meters' # degrees Kelvin
 
-    time[iter] = simtime
+    t[iter] = simtime
     z[iter,:,:] = h
 
     x[:] = X[0,:]
@@ -172,8 +172,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
         print('WARNING: critical slope < maximum slope of the DEM')
     
 
-
-    S_c = np.tan(cr_angle/180*np.pi)
+    S_c = np.tan(cr_angle/180.0*np.pi)
 
     # set the variables for the boundary conditions
 
@@ -222,6 +221,15 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     err = 1.0
     err_old = 1.0
+
+    if sys.version_info >= (3, 0):
+
+        start = time.process_time()
+
+    else:
+
+        start = time.clock()
+
 
     while ( simtime < final_time):
     
@@ -307,24 +315,23 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     
         simtime = simtime + delta_t
     
-        # print('Time = ' + str(simtime) + ' delta_t = ' + str(delta_t) + ' err = ' + str(err))
-
         print('Time = %.5f delta_t = %.5f err = %.3f' % (simtime,delta_t,err))        
 
-        h_x,h_y = np.gradient(h,delta_x,delta_y)
+        if ( verbose_level >= 1):
 
-        grad_h = np.sqrt( h_x**2 + h_y**2 )
+            # gradient is computed using second order accurate central differences in the interior 
+            # points and either first or second order accurate one-sides (forward or backwards) 
+            # differences at the boundaries
+            h_x,h_y = np.gradient(h,delta_x,delta_y)
 
-        # max_angle[iter] = np.arctan(np.max(np.max(grad_h)))*180/np.pi
-        # mean_angle[iter] = np.arctan(np.mean(grad_h))*180/np.pi
+            # magnitude of gradient
+            grad_h = np.sqrt( h_x**2 + h_y**2 )
 
-        # time_iter[iter] = simtime
-    
-        # if ( verbose_level >= 1):
+            max_angle[iter] = np.arctan(np.max(np.max(grad_h)))*180/np.pi
+            mean_angle[iter] = np.arctan(np.mean(grad_h))*180/np.pi
             
-        #     print 'Maximum/mean slope of the DEM = ' + str(max_angle[iter]) \
-        #           + str(mean_angle[iter])
-
+            print('Maximum/mean slope of the DEM = ' + str(max_angle[iter]) \
+                  + str(mean_angle[iter]))
 
         if ( simtime >= iteration_draw_times[iter] ):
             
@@ -332,9 +339,8 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
             print('Saving output '+str(iter))
 
             # add output to netcdf file
-            time[iter] = simtime
+            t[iter] = simtime
             z[iter,:,:] = h
-
             
             if ( plot_output_flag):
 
@@ -342,8 +348,6 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
                             
                 frame_name = run_name + '_{0:03}'.format(iter) + '.png'
                 plt.savefig(frame_name,dpi=200)
-
-
 
             if ( save_output_flag):
 
@@ -360,6 +364,17 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
                 np.savetxt(output_full, np.flipud(h), header=header, fmt='%1.5f',comments='')
 
+
+    if sys.version_info >= (3, 0):
+    
+        elapsed = (time.process_time() - start)
+
+    else:
+    
+        elapsed = (time.clock() - start)
+
+    print ('Time elapsed ' + str(elapsed) + ' sec.')
+    print ('')
                  
     ncfile.close(); print('Dataset is closed!')
 
