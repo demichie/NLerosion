@@ -10,6 +10,8 @@ def read_asc(ascii_file):
     values = [float(h.split(" ")[-1].strip()) \
      for h in hdr]
     cols,rows,xll,yll,cell,nd = values
+    cols = int(cols)
+    rows = int(rows)
     delta_x = cell
     delta_y = cell
 
@@ -39,8 +41,6 @@ def read_asc(ascii_file):
 
     h[h==nd]=np.nan
 
-    k=h
-
-    return (X, Y, h, k,x_min,x_max,delta_x,y_min,y_max,delta_y)
+    return (X, Y, h, x_min, x_max, delta_x, y_min, y_max, delta_y)
 
 
