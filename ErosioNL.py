@@ -138,10 +138,20 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     z = ncfile.createVariable('z',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
     z.standard_name = 'flow thickness' # this is a CF standard name
-    z.units = 'meters' # degrees Kelvin
+    z.units = 'meters' 
+    
+    dz = ncfile.createVariable('dz',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
+    dz.standard_name = 'flow erosion and deposit thickness' # this is a CF standard name
+    dz.units = 'meters' 
+
+    dz_tot = ncfile.createVariable('dz_tot',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
+    dz_tot.standard_name = 'flow erosion and deposit thickness' # this is a CF standard name
+    dz_tot.units = 'meters' 
 
     t[iter] = simtime
     z[iter,:,:] = h
+    dz[iter,:,:] = h - h_init
+    dz_tot[iter,:,:] = h - h_init
 
     x[:] = X[0,:]
     y[:] = Y[:,0]
@@ -341,6 +351,8 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
             # add output to netcdf file
             t[iter] = simtime
             z[iter,:,:] = h
+            dz[iter,:,:] = h - h_old
+            dz_tot[iter,:,:] = h - h_init
             
             if ( plot_output_flag):
 

@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+import shutil
+import os
 import numpy as np
 from cinder_cone_and_k import cinder_cone_and_k
 from ErosioNL import ErosioNL
@@ -12,20 +16,49 @@ run_name = 'sp_crater'
 
 # First, build an initial form
 
+"""
 # Synthetic cinder cone (Hooper & Sheridan):
 
-# x_min = -500.0
-# delta_x = 10.0
-# x_max = 500.0
-# y_min = x_min
-# delta_y = delta_x
-# y_max = x_max 
-# [X, Y, h, k] = cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max)
+# computational grid parameters
+x_min = -500.0
+delta_x = 10.0
+x_max = 500.0
+y_min = x_min
+delta_y = delta_x
+y_max = x_max 
+
+# parameters defining the cone
+
+# semi-axis of the base of the cinder cone:
+# a - semiaxis in the x-direction
+# b - semiaxis in the y-direction
+a = 500 
+b = 300
+
+# r is defined as sqrt( (x/a)^2 + (y/b)^2 )
+# r = 1 defines the base of the cone
+# there are 4 regions defined:
+# r<r1      h = h1                                (flat region inside the crater)
+# r1<r<r2   h varying linearly between h1 and h2  (crater)
+# r2<r<r3   h varying linearly between h2 and h3  (cone slope)
+# r<1       h = h3                                (flat ragion outside the cone)
+
+r1 = 0.1
+r2 = 0.5
+
+h1 = 130
+h2 = 160
+h3 = 0
+    
+
+[X, Y, h, k] = cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h3,a,b)
+"""
 
 # Topography from ascii raster file
 
+
 ascii_file = 'sp_crater.asc'
-[X, Y, h, x_min, x_max, delta_x, y_min, y_max, delta_y] = read_asc(ascii_file)
+[X, Y, h,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
 
 
 # Save initial topography on ascii raster file
@@ -92,7 +125,7 @@ bc = 'NNNN'  # the boundary condition : 'N' (Neumann) or 'D' (Dirichlet)
              # Transient is elevation at the boundaries changing at
              # fixed rate, given by the parameter 'grow_rates'
     
-gr = -100.0             
+gr = 0.0             
 grow_rates = [ gr, gr, gr, gr]  # rate of change at the boundaries
                              # Used only when the b.c. is 'T'
 
@@ -114,6 +147,28 @@ A_c = A_c0 + A_c1 + A_c2
 verbose_level = 0   # level of output on screen (>1 for debug purposes)
 plot_output_flag = 0
 save_output_flag = 1
+
+#search if another run with the same base name already exists
+i = 0
+
+condition = True
+
+base_name = run_name
+
+while condition:
+	
+    run_name = base_name + '_{0:03}'.format(i) 
+
+    backup_advanced_file = run_name + '_advanced_inp.bak'
+    backup_file = run_name + '_inp.bak'
+
+    condition = os.path.isfile(backup_file)
+
+    i = i + 1
+
+# create a backup file of the input parameters
+shutil.copy2('run_code_simple.py', backup_file)
+
 
 ( h_new , h_diff , time_iter , max_angle , mean_angle  ) =       \
     ErosioNL(X,Y,h,final_time,delta_t_max,delta_t0,              \

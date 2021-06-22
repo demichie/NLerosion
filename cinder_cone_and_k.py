@@ -1,4 +1,4 @@
-def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
+def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h3,a,b):
 
     import numpy as np
 
@@ -21,13 +21,15 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
     # r2<r<r3   h varying linearly between h2 and h3
     # r<r3      h = h3
 
-    r1 = 50
-    r2 = 100
-    r3 = 350
+    r1 = 0.1
+    r2 = 0.5
 
     h1 = 130
     h2 = 160
     h3 = 0
+    
+    a = 500
+    b = 300
 
     h = np.zeros((ny,nx)) # initialization of the array of the altitudes
 
@@ -35,7 +37,7 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
     
         for j in range(0,ny):
         
-            r = np.sqrt( x[i]**2 + y[j]**2 )
+            r = np.sqrt(x[i]**2/a**2+y[j]**2/b**2)
         
             if ( r < r1 ):
             
@@ -45,15 +47,15 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
             
                 h[j,i] = h1 + ( r - r1 ) / (r2 - r1) * (h2 - h1)
             
-            elif ( r < 350.0 ):
+            elif ( r < 1 ):
             
-                h[j,i] = h2 + ( r - r2 ) / (r3 - r2) * (h3 - h2)
+                h[j,i] = h2 + ( r - r2 ) / (1.0 - r2) * (h3 - h2)
             
             else:
             
                 h[j,i] = h3
-       
-    
+            
+
     # diffusion coefficient
 
     # there are 5 regions defined:
@@ -63,10 +65,10 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
     # r3<r<r4   k changes linearly between k2 and k1
     # r2>r4     k=k1
     
-    r1 = 40
-    r2 = 50
-    r3 = 150
-    r4 = 160
+    r1 = 0.09
+    r2 = 0.4
+    r3 = 0.6
+    r4 = 0.9
     
     k1 = 10
     k2 = 10
@@ -77,7 +79,7 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
     
         for j in range(0,ny):
         
-            r = np.sqrt( x[i]**2 + y[j]**2 )
+            r = np.sqrt(x[i]**2/a**2+y[j]**2/b**2)
         
             if ( r < r1 ):
             
@@ -101,6 +103,3 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max):
 
     
     return (X, Y,h,k)
-
-
-
