@@ -351,7 +351,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
             # add output to netcdf file
             t[iter] = simtime
             z[iter,:,:] = h
-            dz[iter,:,:] = h - h_old
+            dz[iter,:,:] = ( h - h_old ) / delta_t
             dz_tot[iter,:,:] = h - h_init
             
             if ( plot_output_flag):

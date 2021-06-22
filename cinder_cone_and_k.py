@@ -11,25 +11,6 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h
 
     X,Y = np.meshgrid(x,y)
 
-    # parameters defining the cone
-
-    # r is the distance from the center of the cone
-    # the top is at r2 
-    # there are 4 regions defined:
-    # r<r1      h = h1
-    # r1<r<r2   h varying linearly between h1 and h2
-    # r2<r<r3   h varying linearly between h2 and h3
-    # r<r3      h = h3
-
-    r1 = 0.1
-    r2 = 0.5
-
-    h1 = 130
-    h2 = 160
-    h3 = 0
-    
-    a = 500
-    b = 300
 
     h = np.zeros((ny,nx)) # initialization of the array of the altitudes
 
