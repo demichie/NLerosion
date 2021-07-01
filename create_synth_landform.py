@@ -1,4 +1,4 @@
-def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h3,a,b):
+def create_synth_landform(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry):
 
     import numpy as np
 
@@ -18,7 +18,21 @@ def cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h
     
         for j in range(0,ny):
         
-            r = np.sqrt(x[i]**2/a**2+y[j]**2/b**2)
+            if ( symmetry == 'radial' ):
+            
+                r = np.sqrt(x[i]**2/a**2+y[j]**2/b**2)
+                
+            elif ( symmetry == 'y'):    
+            
+                r = x[i]/a
+                
+            elif ( symmetry == 'x'):
+            
+                r = y(j)/b
+                
+            else:
+            
+                sys.exit("Please define symmetry: radial, x, or y)")
         
             if ( r < r1 ):
             

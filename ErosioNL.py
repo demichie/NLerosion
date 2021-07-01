@@ -140,9 +140,9 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     z.standard_name = 'flow thickness' # this is a CF standard name
     z.units = 'meters' 
     
-    dz = ncfile.createVariable('dz',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
-    dz.standard_name = 'flow erosion and deposit thickness' # this is a CF standard name
-    dz.units = 'meters' 
+    dz_dt = ncfile.createVariable('dz_dt',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
+    dz_dt.standard_name = 'erosion/deposit rate' # this is a CF standard name
+    dz_dt.units = 'meters/seconds' 
 
     dz_tot = ncfile.createVariable('dz_tot',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
     dz_tot.standard_name = 'flow erosion and deposit thickness' # this is a CF standard name
@@ -150,7 +150,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     t[iter] = simtime
     z[iter,:,:] = h
-    dz[iter,:,:] = h - h_init
+    dz_dt[iter,:,:] = h - h_init
     dz_tot[iter,:,:] = h - h_init
 
     x[:] = X[0,:]
@@ -248,15 +248,14 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
         coeff_t = np.maximum( 0.85 , np.minimum( 1.05,err**( -0.35 ) * err_old**( 0.2 ) ) )
     
         delta_t_orig = delta_t_orig * coeff_t
-    
+        delta_t_orig = min(delta_t_orig,iteration_draw_times[iter]-simtime)
+
         err = 1.0
 
         h_old[0:nx,0:ny] = h[0:nx,0:ny]
     
         while ( err >= 1.0 ):
-        
-            delta_t_orig = delta_t_orig * 0.975
-        
+                
             # integration with two steps with half step-size
         
             delta_t = 0.5 * delta_t_orig
@@ -313,7 +312,12 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
             if ( verbose_level >= 1 ):
 
                 print('Accuracy = ' + str(err))
-
+                
+            if ( err >= 1.0):
+            
+                delta_t_orig = delta_t_orig * 0.975
+                if ( verbose_level >= 1 ):
+                    print('delta_t_orig =' ,delta_t_orig)
 
         err_old = err
         
@@ -349,9 +353,9 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
             print('Saving output '+str(iter))
 
             # add output to netcdf file
-            t[iter] = simtime
+            t[iter] = iteration_draw_times[iter-1]
             z[iter,:,:] = h
-            dz[iter,:,:] = ( h - h_old ) / delta_t
+            dz_dt[iter,:,:] = ( h - h_old ) / delta_t
             dz_tot[iter,:,:] = h - h_init
             
             if ( plot_output_flag):
