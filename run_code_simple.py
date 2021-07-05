@@ -3,7 +3,7 @@
 import shutil
 import os
 import numpy as np
-from cinder_cone_and_k import cinder_cone_and_k
+from create_synth_landform import create_synth_landform
 from ErosioNL import ErosioNL
 from read_asc import read_asc
 
@@ -12,11 +12,12 @@ from read_asc import read_asc
 # Mattia de' Michieli Vitturi (Istituto Nazionale di Geofisica e Vulcanologia)
 # April 20, 2016
 
-run_name = 'sp_crater'
 
 # First, build an initial form
 
-"""
+
+run_name = 'synth_cone'
+
 # Synthetic cinder cone (Hooper & Sheridan):
 
 # computational grid parameters
@@ -32,8 +33,8 @@ y_max = x_max
 # semi-axis of the base of the cinder cone:
 # a - semiaxis in the x-direction
 # b - semiaxis in the y-direction
-a = 500 
-b = 300
+a = 200 
+b = 200
 
 # r is defined as sqrt( (x/a)^2 + (y/b)^2 )
 # r = 1 defines the base of the cone
@@ -43,19 +44,63 @@ b = 300
 # r2<r<r3   h varying linearly between h2 and h3  (cone slope)
 # r<1       h = h3                                (flat ragion outside the cone)
 
-r1 = 0.1
+r1 = 0.25
 r2 = 0.5
 
 h1 = 130
 h2 = 160
 h3 = 0
     
+symmetry = 'radial'
 
-[X, Y, h, k] = cinder_cone_and_k(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,h2,h3,a,b)
+[X, Y, h, k] = create_synth_landform(x_min, delta_x, x_max, y_min, \
+                                     delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry)
+
+"""
+# Linear case:
+run_name = 'synth_linear'
+
+# computational grid parameters
+x_min = -500.0
+delta_x = 10.0
+x_max = 500.0
+y_min = x_min
+delta_y = delta_x
+y_max = x_max 
+
+# parameters defining the linear profile
+
+# semi-axis of the base of the cinder cone:
+# a - position of last slope change
+# b - not used
+a = 200 
+b = 200
+
+# r is defined as x/a
+# r = 1 defines the end of slope change zone
+# there are 4 regions defined:
+# r<=r1      h = h1                                (first flat region)
+# r1<r<r2    h varying linearly between h1 and h2  (first constant slope region)
+# r2<r<r1    h varying linearly between h2 and h3  (second constant slope region)
+# r>=1       h = h3                                (final flat ragion)
+
+r1 = 0.25
+r2 = 0.5
+
+h1 = 130
+h2 = 160
+h3 = 0
+    
+symmetry = 'y'
+
+[X, Y, h, k] = synth_landform(x_min, delta_x, x_max, y_min, \
+                              delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry)
 """
 
 # Topography from ascii raster file
 
+
+run_name = 'SPcrater'
 
 ascii_file = 'sp_crater.asc'
 [X, Y, h,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
@@ -97,15 +142,15 @@ c2 = 0.0    # no tilting along the axis orthogonal to the line alfa=0
 # Now set up model input
 # X, Y, h have been built already
 
-final_time = 250.0   # final time in kilo years
+final_time = 500.0   # final time in kilo years
 
 delta_t_max = 10.00  # maximum time step
 delta_t0 = 0.01      # initial time step
 
 cr_angle = 33.0      # critical slope in degrees
 
-enne = 2             # exponent for the nonlinearity of the model
-                     # enne = inf  gives a linear model
+enne = np.inf             # exponent for the nonlinearity of the model
+                     # enne = np.inf  gives a linear model
 
 k = 1.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
                      # the time unit is the same of the parameter 'final_time'
@@ -129,7 +174,7 @@ gr = 0.0
 grow_rates = [ gr, gr, gr, gr]  # rate of change at the boundaries
                              # Used only when the b.c. is 'T'
 
-n_output = 20  # number of output plotted
+n_output = 50  # number of output plotted
 
 
 
