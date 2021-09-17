@@ -28,10 +28,10 @@ def read_asc(ascii_file):
         x_min = xll
         y_min = yll
 
-    x_max = x_min+cols*delta_x
+    x_max = x_min+(cols-1)*delta_x
     x = np.linspace(x_min,x_max,cols)
 
-    y_max = y_min+rows*delta_y
+    y_max = y_min+(rows-1)*delta_y
     y = np.linspace(y_min,y_max,rows)
 
     X,Y = np.meshgrid(x,y)
