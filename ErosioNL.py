@@ -225,6 +225,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     delta_t_stab = 0.5 * delta_x * delta_y / np.max(f)
 
     delta_t = np.minimum( delta_t0 , delta_t_stab )
+    delta_t_old = delta_t
 
     print('Delta t for stability = ', str(delta_t_stab))
 
@@ -243,9 +244,12 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     while ( simtime < final_time):
     
-        delta_t_orig = delta_t
+        delta_t_orig = 0.5 * ( delta_t + delta_t_old )
     
         coeff_t = np.maximum( 0.85 , np.minimum( 1.05,err**( -0.35 ) * err_old**( 0.2 ) ) )
+        
+        delta_t_old = delta_t
+        err_old = err
     
         delta_t_orig = delta_t_orig * coeff_t
         delta_t_orig = min(delta_t_orig,iteration_draw_times[iter]-simtime)
@@ -319,7 +323,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
                 if ( verbose_level >= 1 ):
                     print('delta_t_orig =' ,delta_t_orig)
 
-        err_old = err
+        # err_old = err
         
         h_init  = h_init + A_c * delta_t
     
@@ -329,7 +333,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     
         simtime = simtime + delta_t
     
-        print('Time = %.5f delta_t = %.5f err = %.3f' % (simtime,delta_t,err))        
+        print('Time = %.5f delta_t = %.5f err = %10.3E' % (simtime,delta_t,err))        
 
         if ( verbose_level >= 1):
 

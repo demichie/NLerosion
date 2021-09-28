@@ -7,7 +7,7 @@ def read_asc(ascii_file):
     # Parse the header using a loop and
     # the built-in linecache module
     hdr = [getline(source1, i) for i in range(1,7)]
-    values = [float(h.split(" ")[-1].strip()) \
+    values = [float(h.strip('\n').strip().split(" ")[-1]) \
      for h in hdr]
     cols,rows,xll,yll,cell,nd = values
     cols = int(cols)
