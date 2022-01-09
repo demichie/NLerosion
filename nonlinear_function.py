@@ -17,24 +17,23 @@ def nonlinear_function(h,delta_x,delta_y,S_c,enne,k,max_nlc):
 
     grad_h = np.sqrt( h_x**2 + h_y**2 )
 
-    ratio = np.minimum(np.ones((nx,ny)),grad_h/S_c)
+    ratio = np.minimum(np.ones((nx,ny)),grad_h/S_c) #gradient computed in each sells, so wnp.ones is an array
 
     if ( np.isinf(enne) ):
-    
+
         non_linear_coeff = 1.0
-    
+
     else:
-    
-        if ( enne == 0 ):
-        
+
+        if ( enne == 0 ): #when n=0 we have linear flux(diffusion). enne = n!!!
+
             non_linear_coeff = max_nlc
-        
+
         else:
-        
-            ratio2 = ( ( max_nlc - 1.0 ) / max_nlc ) ** ( 1.0 / enne ) * ratio
+
+            ratio2 = ( ( max_nlc - 1.0 ) / max_nlc ) ** ( 1.0 / enne ) * ratio #max_nlc=cmax
             non_linear_coeff = 1.0 / ( 1.0 - ratio2**enne )
 
     effe = k * non_linear_coeff
 
     return effe
-

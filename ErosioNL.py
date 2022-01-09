@@ -1,10 +1,10 @@
 def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
-    enne, k, max_nlc, max_inner_iter, res , bc, grow_rate ,        \
+    enne, k, lambda_wb, k_wb, max_nlc, max_inner_iter, res , bc, grow_rate ,        \
     run_name , n_output , A_c , verbose_level, save_output_flag,   \
-    plot_output_flag):
+    plot_output_flag, plot_show_flag):
 
 
-    # EROSIONL This function solve for the nonlinear diffusion problem 
+    # EROSIONL This function solve for the nonlinear diffusion problem
     #
     # dh/dt = div( f(h) grad(h) )
     #
@@ -23,7 +23,13 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     # - delta_t0 is the maximum time step;
     # - angle is the critical slope;
     # - enne is the exponent of the model;
-    # - k is the diffusion goefficient, a scalar or a (nx,ny) array;
+    # - k is the diffusion goefficient, a scalar or a (nx,ny) array. The
+    #   value of k is multiplied the a relative coefficient k_rel, which
+    #   is a function of time;
+    # - lambda_wb is the time scale parameter of the Weibull cumulative 
+    #   distribution (for t=lambda_wb, k_rel=(e-1)/e). If lambda_wb=0,
+    #   then k_rel is set to 1.0;  
+    # - k_wb is the shape parameter of the Weibull distribution;
     # - max_nlc is the maximum value of the nonlienar coefficient;
     # - max_inner_iter is the maximum number of iteration for the inner loop;
     # - res is the residual required for the convergenge of the inner loop;
@@ -48,15 +54,11 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     import numpy as np
 
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib.ticker import LinearLocator, FormatStrFormatter
-    import matplotlib.pyplot as plt
 
     from advance_time import advance_time
     from nonlinear_function import nonlinear_function
     from make_plot import make_plot
-    import netCDF4 
+    import netCDF4
     import time
     import sys
 
@@ -70,9 +72,9 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     h_temp_full = np.zeros((nx,ny))
 
     if ( np.isscalar(k) ):
-    
+
         k = k * np.ones((nx,ny))
-    
+
     simtime = 0.0
     iter = 0
 
@@ -80,18 +82,12 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     h_init = h
 
+    h_min = np.amin(h) - 0.1*(np.amax(h)-np.amin(h))
+    h_max = np.amax(h) + 0.1*(np.amax(h)-np.amin(h))
+
     if ( plot_output_flag ):
 
-        plt.ion()
-    
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-
-        make_plot(X,Y,h,h-h_init,ax)
-
-        frame_name = run_name + '_{0:03}'.format(0) + '.png'
-        plt.savefig(frame_name,dpi=200)
-
+        make_plot(X,Y,h,h_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_flag)
 
     if ( save_output_flag):
 
@@ -111,10 +107,10 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     # create netcdf4 file
     ncfilename = run_name+'.nc'
 
-    ncfile = netCDF4.Dataset(ncfilename,mode='w',format='NETCDF4') 
+    ncfile = netCDF4.Dataset(ncfilename,mode='w',format='NETCDF4')
 
-    x_dim = ncfile.createDimension('x', nx) 
-    y_dim = ncfile.createDimension('y', ny) 
+    x_dim = ncfile.createDimension('x', nx)
+    y_dim = ncfile.createDimension('y', ny)
     time_dim = ncfile.createDimension('time', None) # unlimited axis (can be appended to).
 
     ncfile.title = run_name+' output'
@@ -138,15 +134,15 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     z = ncfile.createVariable('z',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
     z.standard_name = 'flow thickness' # this is a CF standard name
-    z.units = 'meters' 
-    
+    z.units = 'meters'
+
     dz_dt = ncfile.createVariable('dz_dt',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
     dz_dt.standard_name = 'erosion/deposit rate' # this is a CF standard name
-    dz_dt.units = 'meters/seconds' 
+    dz_dt.units = 'meters/seconds'
 
     dz_tot = ncfile.createVariable('dz_tot',np.float64,('time','y','x'),zlib=True) # note: unlimited dimension is leftmost
     dz_tot.standard_name = 'flow erosion and deposit thickness' # this is a CF standard name
-    dz_tot.units = 'meters' 
+    dz_tot.units = 'meters'
 
     t[iter] = simtime
     z[iter,:,:] = h
@@ -162,7 +158,7 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     h_x,h_y = np.gradient(h,delta_x,delta_y)
     grad_h = np.sqrt( h_x**2 + h_y**2 )
 
-    max_angle = np.zeros((n_output)) 
+    max_angle = np.zeros((n_output))
     mean_angle = np.zeros((n_output))
     time_iter = np.zeros((n_output))
 
@@ -177,10 +173,10 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
     print('Mean slope of the DEM = ' + str(mean_angle[iter]))
 
     if ( cr_angle < max_angle[iter] ):
-    
+
         print('Critical slope = ' + str(cr_angle))
         print('WARNING: critical slope < maximum slope of the DEM')
-    
+
 
     S_c = np.tan(cr_angle/180.0*np.pi)
 
@@ -192,31 +188,31 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
 
     for i in range(0,4):
-    
-        if ( bc[i] == 'N' ): 
-        
+
+        if ( bc[i] == 'N' ):
+
             Neumann[i] = True
             Dirichlet[i] = False
             Transient[i] = False
-            
+
         elif ( bc[i] == 'D' ):
-            
+
             Dirichlet[i] = True
             Neumann[i] = False
             Transient[i] = False
-            
+
         elif ( bc[i] == 'T' ):
-            
+
             Transient[i] = True
             Dirichlet[i] = False
             Neumann[i] = False
 
         else:
-            
+
             print('WARNING: wrong boundary condition, set to Neumann')
             Dirichlet[0:3] = False
             Neumann[0:3] = True
-            
+
 
 
 
@@ -243,102 +239,105 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
 
     while ( simtime < final_time):
-    
+
         delta_t_orig = 0.5 * ( delta_t + delta_t_old )
-    
+
         coeff_t = np.maximum( 0.85 , np.minimum( 1.05,err**( -0.35 ) * err_old**( 0.2 ) ) )
-        
+
         delta_t_old = delta_t
         err_old = err
-    
+
         delta_t_orig = delta_t_orig * coeff_t
         delta_t_orig = min(delta_t_orig,iteration_draw_times[iter]-simtime)
 
         err = 1.0
 
         h_old[0:nx,0:ny] = h[0:nx,0:ny]
-    
+
         while ( err >= 1.0 ):
-                
+
             # integration with two steps with half step-size
-        
+
             delta_t = 0.5 * delta_t_orig
-        
+
             # first half step
 
-        
+
             (h_temp[0:nx,0:ny],residual) = \
                     advance_time( h_old[0:nx,0:ny] , h_old[0:nx,0:ny] , delta_t , delta_x , \
-                    delta_y , S_c , enne , k , max_nlc , max_inner_iter , res , \
-                    Dirichlet, Transient , Neumann , grow_rate , A_c , verbose_level )
+                    delta_y ,  lambda_wb , k_wb , S_c , enne , k , max_nlc , max_inner_iter , res , \
+                    Dirichlet, Transient , Neumann , grow_rate , A_c , \
+                    simtime, verbose_level )
 
             # print '1st half ',np.min(h_temp),np.max(h_temp)
-        
+
             # second half step
-            
+
             h_guess = h_temp + ( h_temp - h_old)
-        
+
             (h_new[0:nx,0:ny],residual) = \
                     advance_time( h_guess[0:nx,0:ny] , h_temp[0:nx,0:ny] , delta_t , delta_x , \
-                    delta_y , S_c , enne , k , max_nlc , max_inner_iter , res , \
-                    Dirichlet, Transient , Neumann , grow_rate , A_c , verbose_level )
+                    delta_y ,  lambda_wb , k_wb , S_c , enne , k , max_nlc , max_inner_iter , res , \
+                    Dirichlet, Transient , Neumann , grow_rate , A_c , \
+                    simtime , verbose_level )
 
             h_temp_half[0:nx,0:ny] = h_new[0:nx,0:ny]
-        
+
             # print '1st half ',np.min(h_temp),np.max(h_temp)
             # print '2nd half ',np.min(h_temp_half),np.max(h_temp_half)
 
             # integration with one full step
-        
+
             delta_t = delta_t_orig
 
             h_guess[0:nx,0:ny] = h_temp_half[0:nx,0:ny]
 
             (h_temp_full[0:nx,0:ny],residual) = \
                     advance_time( h_guess[0:nx,0:ny] , h_old[0:nx,0:ny] , delta_t , delta_x , \
-                    delta_y , S_c , enne , k , max_nlc , max_inner_iter , res , \
-                    Dirichlet, Transient , Neumann , grow_rate , A_c , verbose_level )
-                
+                    delta_y ,  lambda_wb , k_wb , S_c , enne , k , max_nlc , max_inner_iter , res , \
+                    Dirichlet, Transient , Neumann , grow_rate , A_c , \
+                    simtime ,  verbose_level )
+
             # print '2nd half ',np.min(h_temp_half),np.max(h_temp_half)
             # print 'full step ',np.min(h_temp_full),np.max(h_temp_full)
 
             # check the error
-        
+
             delta_t = delta_t_orig
-            
+
             delta_h = np.abs( h_temp_half - h_temp_full )
 
             atol = res
             rtol = res
 
             err = np.sqrt( nx*ny * np.sum( ( delta_h / ( atol + np.abs(h) * rtol ) )**2 ) )
-        
+
             if ( verbose_level >= 1 ):
 
                 print('Accuracy = ' + str(err))
-                
+
             if ( err >= 1.0):
-            
+
                 delta_t_orig = delta_t_orig * 0.975
                 if ( verbose_level >= 1 ):
                     print('delta_t_orig =' ,delta_t_orig)
 
         # err_old = err
-        
+
         h_init  = h_init + A_c * delta_t
-    
+
         h_diff = h_temp - h_init
-    
+
         h[0:nx,0:ny] = h_temp_half[0:nx,0:ny]
-    
+
         simtime = simtime + delta_t
-    
-        print('Time = %.5f delta_t = %.5f err = %10.3E' % (simtime,delta_t,err))        
+
+        print('Time = %.5f delta_t = %.5f err = %10.3E' % (simtime,delta_t,err))
 
         if ( verbose_level >= 1):
 
-            # gradient is computed using second order accurate central differences in the interior 
-            # points and either first or second order accurate one-sides (forward or backwards) 
+            # gradient is computed using second order accurate central differences in the interior
+            # points and either first or second order accurate one-sides (forward or backwards)
             # differences at the boundaries
             h_x,h_y = np.gradient(h,delta_x,delta_y)
 
@@ -347,12 +346,12 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
             max_angle[iter] = np.arctan(np.max(np.max(grad_h)))*180/np.pi
             mean_angle[iter] = np.arctan(np.mean(grad_h))*180/np.pi
-            
+
             print('Maximum/mean slope of the DEM = ' + str(max_angle[iter]) \
                   + str(mean_angle[iter]))
 
         if ( simtime >= iteration_draw_times[iter] ):
-            
+
             iter += 1
             print('Saving output '+str(iter))
 
@@ -361,13 +360,11 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
             z[iter,:,:] = h
             dz_dt[iter,:,:] = ( h - h_old ) / delta_t
             dz_tot[iter,:,:] = h - h_init
-            
+
             if ( plot_output_flag):
 
-                make_plot(X,Y,h_temp_half,h_temp_half-h_init,ax)
-                            
-                frame_name = run_name + '_{0:03}'.format(iter) + '.png'
-                plt.savefig(frame_name,dpi=200)
+                time_text = make_plot(X,Y,h,h_init,h_min,h_max,simtime,cr_angle,run_name, \
+                                      iter,plot_show_flag)
 
             if ( save_output_flag):
 
@@ -386,16 +383,16 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
 
     if sys.version_info >= (3, 0):
-    
+
         elapsed = (time.process_time() - start)
 
     else:
-    
+
         elapsed = (time.clock() - start)
 
     print ('Time elapsed ' + str(elapsed) + ' sec.')
     print ('')
-                 
+
     ncfile.close(); print('Dataset is closed!')
 
 
@@ -409,15 +406,4 @@ def ErosioNL( X, Y, h, final_time, delta_t_max,delta_t0, cr_angle, \
 
     print('Max. erosion (m) = ' + str(np.maximum(0.0,-np.min(h_diff))))
 
-    plt.ioff()
-    plt.show()
-
-
     return ( h_new , h_diff , time_iter , max_angle , mean_angle )
-
-
-
-
-
-
-
