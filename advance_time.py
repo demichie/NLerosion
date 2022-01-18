@@ -78,10 +78,9 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
         expl_term_temp_y[0:nx, 0] = flux_temp_north[0:nx, 0] / delta_y
 
-        expl_term_temp_y[0:nx, 1:ny-1] = (flux_temp_north[0:nx, 1:ny-1]
-                                          - flux_temp_south[0:nx, 1:ny-1])
-        / delta_y
-
+        expl_term_temp_y[0:nx, 1:ny-1] = (flux_temp_north[0:nx, 1:ny-1] - 
+                                        flux_temp_south[0:nx, 1:ny-1])/delta_y
+                                         
         expl_term_temp_y[0:nx, ny-1] = - flux_temp_south[0:nx, ny-1] / delta_y
 
         # -----------------------------
@@ -98,9 +97,8 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
         expl_term_old_y[0:nx, 0] = flux_old_north[0:nx, 0] / delta_y
 
-        expl_term_old_y[0:nx, 1:ny-1] = (flux_old_north[0:nx, 1:ny-1]
-                                         - flux_old_south[0:nx, 1:ny-1])
-        / delta_y
+        expl_term_old_y[0:nx, 1:ny-1] = (flux_old_north[0:nx, 1:ny-1] - 
+                                       flux_old_south[0:nx, 1:ny-1])/delta_y
 
         expl_term_old_y[0:nx, ny-1] = - flux_old_south[0:nx, ny-1] / delta_y
 
