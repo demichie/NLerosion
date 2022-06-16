@@ -19,32 +19,32 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
     from numerical_fluxes import numerical_fluxes
     from relative_coeff import relative_coeff
 
-    nx = h_init.shape[0]
-    ny = h_init.shape[1]
+    ny = h_init.shape[0]
+    nx = h_init.shape[1]
 
-    h_temp = np.zeros((nx, ny))
+    h_temp = np.zeros((ny, nx))
 
-    h_temp[0:nx, 0:ny] = h_init[0:nx, 0:ny]
-    h_new = np.zeros((nx, ny))
+    h_temp[0:ny, 0:nx] = h_init[0:ny, 0:nx]
+    h_new = np.zeros((ny, nx))
 
-    w = np.zeros((nx, ny))  # temporary solution array
-    v = np.zeros((nx, ny))  # temporary solution array
+    w = np.zeros((ny, nx))  # temporary solution array
+    v = np.zeros((ny, nx))  # temporary solution array
 
-    ax = np.zeros((nx))  # lower-diagonal
-    bx = np.zeros((nx))  # diagonal
-    cx = np.zeros((nx))  # upper-diagonal
-    dx = np.zeros((nx))  # right-hand side
+    ax = np.zeros((ny))  # lower-diagonal
+    bx = np.zeros((ny))  # diagonal
+    cx = np.zeros((ny))  # upper-diagonal
+    dx = np.zeros((ny))  # right-hand side
 
-    ay = np.zeros((ny))  # lower-diagonal
-    by = np.zeros((ny))  # diagonal
-    cy = np.zeros((ny))  # upper-diagonal
-    dy = np.zeros((ny))  # right-hand side
+    ay = np.zeros((nx))  # lower-diagonal
+    by = np.zeros((nx))  # diagonal
+    cy = np.zeros((nx))  # upper-diagonal
+    dy = np.zeros((nx))  # right-hand side
 
-    expl_term_temp_x = np.zeros((nx, ny))
-    expl_term_temp_y = np.zeros((nx, ny))
+    expl_term_temp_x = np.zeros((ny, nx))
+    expl_term_temp_y = np.zeros((ny, nx))
 
-    expl_term_old_x = np.zeros((nx, ny))
-    expl_term_old_y = np.zeros((nx, ny))
+    expl_term_old_x = np.zeros((ny, nx))
+    expl_term_old_y = np.zeros((ny, nx))
 
     k_rel = relative_coeff(simtime, lambda_wb, k_wb)
     f_old = nonlinear_function(
@@ -71,17 +71,17 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
         expl_term_temp_x[0, :] = flux_temp_east[0, :] / delta_x
 
-        expl_term_temp_x[1:nx-1, :] = (flux_temp_east[1:nx-1, :]
-                                       - flux_temp_west[1:nx-1, :]) / delta_x
+        expl_term_temp_x[1:ny-1, :] = (flux_temp_east[1:ny-1, :]
+                                       - flux_temp_west[1:ny-1, :]) / delta_x
 
-        expl_term_temp_x[nx-1, :] = - flux_temp_west[nx-1, :] / delta_x
+        expl_term_temp_x[ny-1, :] = - flux_temp_west[ny-1, :] / delta_x
 
-        expl_term_temp_y[0:nx, 0] = flux_temp_north[0:nx, 0] / delta_y
+        expl_term_temp_y[0:ny, 0] = flux_temp_north[0:ny, 0] / delta_y
 
-        expl_term_temp_y[0:nx, 1:ny-1] = (flux_temp_north[0:nx, 1:ny-1] - 
-                                        flux_temp_south[0:nx, 1:ny-1])/delta_y
+        expl_term_temp_y[0:ny, 1:nx-1] = (flux_temp_north[0:ny, 1:nx-1] - 
+                                        flux_temp_south[0:ny, 1:nx-1])/delta_y
                                          
-        expl_term_temp_y[0:nx, ny-1] = - flux_temp_south[0:nx, ny-1] / delta_y
+        expl_term_temp_y[0:ny, nx-1] = - flux_temp_south[0:ny, nx-1] / delta_y
 
         # -----------------------------
 
@@ -90,17 +90,17 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
         expl_term_old_x[0, :] = flux_old_east[0, :] / delta_x
 
-        expl_term_old_x[1:nx-1, :] = (flux_old_east[1:nx-1, :]
-                                      - flux_old_west[1:nx-1, :]) / delta_x
+        expl_term_old_x[1:ny-1, :] = (flux_old_east[1:ny-1, :]
+                                      - flux_old_west[1:ny-1, :]) / delta_x
 
-        expl_term_old_x[nx-1, :] = - flux_old_west[nx-1, :] / delta_x
+        expl_term_old_x[ny-1, :] = - flux_old_west[ny-1, :] / delta_x
 
-        expl_term_old_y[0:nx, 0] = flux_old_north[0:nx, 0] / delta_y
+        expl_term_old_y[0:ny, 0] = flux_old_north[0:ny, 0] / delta_y
 
-        expl_term_old_y[0:nx, 1:ny-1] = (flux_old_north[0:nx, 1:ny-1] - 
-                                       flux_old_south[0:nx, 1:ny-1])/delta_y
+        expl_term_old_y[0:ny, 1:nx-1] = (flux_old_north[0:ny, 1:nx-1] - 
+                                       flux_old_south[0:ny, 1:nx-1])/delta_y
 
-        expl_term_old_y[0:nx, ny-1] = - flux_old_south[0:nx, ny-1] / delta_y
+        expl_term_old_y[0:ny, nx-1] = - flux_old_south[0:ny, nx-1] / delta_y
 
         expl_term = - (h_temp - h_old) \
             + delta_t * 0.5 * (expl_term_temp_x + expl_term_temp_y) \
@@ -126,17 +126,17 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
         if (Dirichlet[2]) or (Transient[2]):
 
-            ax[nx-1] = 0.0   # these coefficients are defined in order to
-            bx[nx-1] = 1.0   # impose the Dirichlet boundary condition
-            dx[nx-1] = 0.0   # boundary condition
+            ax[ny-1] = 0.0   # these coefficients are defined in order to
+            bx[ny-1] = 1.0   # impose the Dirichlet boundary condition
+            dx[ny-1] = 0.0   # boundary condition
 
         if (Dirichlet[3]) or (Transient[3]):
 
-            last_row = ny-1
+            last_row = nx-1
 
         else:
 
-            last_row = ny
+            last_row = nx
 
         for j in range(first_row, last_row):
 
@@ -150,43 +150,43 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
                 cx[0] = - 0.25 * delta_t / delta_x**2 * (f[1, j] + f[0, j])
                 dx[0] = expl_term[0, j]
 
-            ax[1:nx-1] = - 0.25 * delta_t / \
-                delta_x**2 * (f[0:nx-2, j] + f[1:nx-1, j])
+            ax[1:ny-1] = - 0.25 * delta_t / \
+                delta_x**2 * (f[0:ny-2, j] + f[1:ny-1, j])
 
-            bx[1:nx-1] = 1.0 + 0.25 * delta_t / delta_x**2 * \
-                (f[2:nx, j] + 2.0 * f[1:nx-1, j] + f[0:nx-2, j])
+            bx[1:ny-1] = 1.0 + 0.25 * delta_t / delta_x**2 * \
+                (f[2:ny, j] + 2.0 * f[1:ny-1, j] + f[0:ny-2, j])
 
-            cx[1:nx-1] = - 0.25 * delta_t / \
-                delta_x**2 * (f[2:nx, j] + f[1:nx-1, j])
+            cx[1:ny-1] = - 0.25 * delta_t / \
+                delta_x**2 * (f[2:ny, j] + f[1:ny-1, j])
 
-            dx[1:nx-1] = expl_term[1:nx-1, j]
+            dx[1:ny-1] = expl_term[1:ny-1, j]
 
             if (Neumann[2]):
 
-                # coefficients for the Neumann b.c. at node (nx,j)
-                ax[nx-1] = - 0.25 * delta_t / \
-                    delta_x**2 * (f[nx-2, j] + f[nx-1, j])
+                # coefficients for the Neumann b.c. at node (ny,j)
+                ax[ny-1] = - 0.25 * delta_t / \
+                    delta_x**2 * (f[ny-2, j] + f[ny-1, j])
 
-                bx[nx-1] = 1.0 + 0.25 * delta_t / delta_x**2 * \
-                    (f[nx-1, j] + f[nx-2, j])
+                bx[ny-1] = 1.0 + 0.25 * delta_t / delta_x**2 * \
+                    (f[ny-1, j] + f[ny-2, j])
 
-                dx[nx-1] = expl_term[nx-1, j]
+                dx[ny-1] = expl_term[ny-1, j]
 
             # call the tridiagonal solver
-            # w[0:nx,j] = TDMAsolver(ax,bx,cx,dx)
-            w[0:nx, j] = NEWsolver(ax, bx, cx, dx)
+            # w[0:ny,j] = TDMAsolver(ax,bx,cx,dx)
+            w[0:ny, j] = NEWsolver(ax, bx, cx, dx)
 
         # Solve in the y-direction
 
         if (Dirichlet[0]):
 
             first_column = 1
-            h_temp[0, 0:ny] = h_old[0, 0:ny]
+            h_temp[0, 0:nx] = h_old[0, 0:nx]
 
         elif (Transient[0]):
 
             first_column = 1
-            h_temp[0, 0:ny] = h_old[0, 0:ny] + grow_rate[0]*delta_t
+            h_temp[0, 0:nx] = h_old[0, 0:nx] + grow_rate[0]*delta_t
 
         elif (Neumann[0]):
 
@@ -204,35 +204,35 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
             cy[0] = 0.0
             dy[0] = grow_rate(2)*delta_t
 
-            h_temp[0:nx, 0] = h_old[0:nx, 0] + grow_rate[1]*delta_t
+            h_temp[0:ny, 0] = h_old[0:ny, 0] + grow_rate[1]*delta_t
 
         if (Dirichlet[2]):
 
-            last_column = nx-1
-            h_temp[nx-1, 0:ny] = h_old[nx-1, 0:ny]
+            last_column = ny-1
+            h_temp[ny-1, 0:nx] = h_old[ny-1, 0:nx]
 
         elif (Transient[2]):
 
-            last_column = nx-1
-            h_temp[nx-1, 0:ny] = h_old[nx-1, 0:ny] + grow_rate[2]*delta_t
+            last_column = ny-1
+            h_temp[ny-1, 0:nx] = h_old[ny-1, 0:nx] + grow_rate[2]*delta_t
 
         elif (Neumann[2]):
 
-            last_column = nx
+            last_column = ny
 
         if (Dirichlet[3]):
 
-            ay[ny-1] = 0.0
-            by[ny-1] = 1.0
-            dy[ny-1] = 0.0
+            ay[nx-1] = 0.0
+            by[nx-1] = 1.0
+            dy[nx-1] = 0.0
 
         elif (Transient[3]):
 
-            ay[ny-1] = 0.0
-            by[ny-1] = 1.0
-            dy[ny-1] = grow_rate[3]*delta_t
+            ay[nx-1] = 0.0
+            by[nx-1] = 1.0
+            dy[nx-1] = grow_rate[3]*delta_t
 
-            h_temp[0:nx, ny-1] = h_old[0:nx, ny-1] + grow_rate[3]*delta_t
+            h_temp[0:ny, nx-1] = h_old[0:ny, nx-1] + grow_rate[3]*delta_t
 
         for i in range(first_column, last_column):
 
@@ -245,29 +245,29 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
                 cy[0] = - 0.25 * delta_t / delta_y**2 * (f[i, 1] + f[i, 0])
                 dy[0] = w[i, 0]
 
-            ay[1:ny-1] = - 0.25 * delta_t / \
-                delta_y**2 * (f[i, 0:ny-2] + f[i, 1:ny-1])
-            by[1:ny-1] = 1.0 + 0.25 * delta_t / delta_y**2 * \
-                (f[i, 2:ny] + 2.0 * f[i, 1:ny-1] + f[i, 0:ny-2])
+            ay[1:nx-1] = - 0.25 * delta_t / \
+                delta_y**2 * (f[i, 0:nx-2] + f[i, 1:nx-1])
+            by[1:nx-1] = 1.0 + 0.25 * delta_t / delta_y**2 * \
+                (f[i, 2:nx] + 2.0 * f[i, 1:nx-1] + f[i, 0:nx-2])
 
-            cy[1:ny-1] = - 0.25 * delta_t / \
-                delta_y**2 * (f[i, 2:ny] + f[i, 1:ny-1])
+            cy[1:nx-1] = - 0.25 * delta_t / \
+                delta_y**2 * (f[i, 2:nx] + f[i, 1:nx-1])
 
-            dy[1:ny-1] = w[i, 1:ny-1]
+            dy[1:nx-1] = w[i, 1:nx-1]
 
             if (Neumann[3]):
 
-                # coefficients for the Neumann b.c. at node [i,ny-1]
-                ay[ny-1] = - 0.25 * delta_t / \
-                    delta_y**2 * (f[i, ny-2] + f[i, ny-1])
-                by[ny-1] = 1.0 + 0.25 * delta_t / delta_y**2 * \
-                    (f[i, ny-1] + f[i, ny-2])
+                # coefficients for the Neumann b.c. at node [i,nx-1]
+                ay[nx-1] = - 0.25 * delta_t / \
+                    delta_y**2 * (f[i, nx-2] + f[i, nx-1])
+                by[nx-1] = 1.0 + 0.25 * delta_t / delta_y**2 * \
+                    (f[i, nx-1] + f[i, nx-2])
 
-                dy[ny-1] = w[i, ny-1]
+                dy[nx-1] = w[i, nx-1]
 
             # call the tridiagonal solver
-            # v[i,0:ny] = TDMAsolver(ay,by,cy,dy)
-            v[i, 0:ny] = NEWsolver(ay, by, cy, dy)
+            # v[i,0:nx] = TDMAsolver(ay,by,cy,dy)
+            v[i, 0:nx] = NEWsolver(ay, by, cy, dy)
 
         residual = np.maximum(np.abs(v.min()), np.abs(v.max()))
 
@@ -283,9 +283,9 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
             break
 
-    h_new[0:nx, 0:ny] = 1.0 * h_temp[0:nx, 0:ny]
+    h_new[0:ny, 0:nx] = 1.0 * h_temp[0:ny, 0:nx]
 
-    return [h_new[0:nx, 0:ny], residual]
+    return [h_new[0:ny, 0:nx], residual]
 
 
 def NEWsolver(a, b, c, d):

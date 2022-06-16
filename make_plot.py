@@ -1,4 +1,5 @@
-def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_flag):
+def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,
+              plot_show_flag,flank_mask):
 
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
@@ -6,7 +7,9 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
     import matplotlib.pyplot as plt
     import numpy as np
-
+    from matplotlib.colors import LightSource
+    import numpy.ma as ma
+    
     import imp
 
     try:
@@ -29,7 +32,7 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
         
     fig = plt.figure()
     fig.set_size_inches(11,7)
-    ax1 = fig.add_subplot(2,2,1,projection='3d')
+    ax1 = fig.add_subplot(2,2,1)
     ax2 = fig.add_subplot(2,2,2)
     ax3 = fig.add_subplot(2,2,3)
     ax4 = fig.add_subplot(2,2,4)
@@ -39,6 +42,12 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
     delta_x = X[0,1]-X[0,0]
     delta_y = Y[1,0]-Y[0,0]
     
+    x_min = X[0,0] - 0.5*delta_x
+    x_max = X[0,-1] + 0.5*delta_x
+    
+    y_min = Y[0,0] - 0.5*delta_y
+    y_max = Y[-1,0] + 0.5*delta_y
+
     Z_x,Z_y = np.gradient(Z,delta_x,delta_y)
 
     grad_Z = np.sqrt( Z_x**2 + Z_y**2 )
@@ -49,16 +58,17 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
 
     norm = colors.Normalize(vmin=0.0, vmax=cr_angle)
 
-    ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors = my_col , 
-                    linewidth=0, antialiased=False, alpha = 0.7)
-     
-    #m = cm.ScalarMappable(cmap=plt.cm.jet, norm=norm)
-    #m.set_array([])
-    #plt.colorbar(m,ax=ax1,location='bottom') 
-                    
-    # clb1.set_label('Slope [°]')
-                    
-                    
+    
+    ls = LightSource(azdeg=315, altdeg=45)
+
+    extent = [x_min, x_max, y_min, y_max]
+    ax1.imshow(ls.hillshade(Z,vert_exag=1.0,
+                 dx=delta_x,dy=delta_y),cmap='gray',extent=extent,
+                 origin='lower') 
+
+    ax1.imshow(flank_mask,cmap='gray',extent=extent,alpha=0.1,
+                 origin='lower') 
+                                        
     nx = X.shape[1]
     ny = X.shape[0]  
     
@@ -68,9 +78,9 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
     
     dh = h_max-h_min
     
-    ax1.plot3D(X[idx1,:],Y[idx1,:],Z[idx1,:]+0.01*dh, 'blue')
-    ax1.plot3D(X[idx2,:],Y[idx2,:],Z[idx2,:]+0.01*dh, 'red')
-    ax1.plot3D(X[idx3,:],Y[idx3,:],Z[idx3,:]+0.01*dh, 'green')
+    ax1.plot(X[idx1,:],Y[idx1,:], 'blue')
+    ax1.plot(X[idx2,:],Y[idx2,:], 'red')
+    ax1.plot(X[idx3,:],Y[idx3,:], 'green')
 
     if ( np.min(Z_diff) == np.max(Z_diff) ):
     
@@ -79,17 +89,13 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
         
    
     ax1.set_xlabel('x [m]')
-    ax1.set_xlim(np.amin(X),np.amax(X))
+    ax1.set_xlim(x_min,x_max)
     ax1.set_ylabel('y [m]')
-    ax1.set_ylim(np.amin(Y),np.amax(Y))
-    ax1.set_zlabel('z [m]')
-    ax1.set_zlim(h_min,h_max)
-
-    
-    extent = [np.amin(X),np.amax(X),np.amin(Y),np.amax(Y)] 
+    ax1.set_ylim(y_min,y_max)
     
     z_range = np.amax(np.abs(Z_diff))   
-    cnt = ax2.imshow(Z_diff, extent=extent, vmin=-z_range, vmax=z_range)
+    cnt = ax2.imshow(Z_diff, cmap='seismic', extent=extent, vmin=-z_range, 
+                     vmax=z_range, origin='lower')
     
     clb = plt.colorbar(cnt,ax=ax2)
     clb.set_label('Delta h [m]')
@@ -124,8 +130,10 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
     time_text.set_position((x_min+0.05*(x_max-x_min), y_min+0.9*(y_max-y_min)))
     time_text.set_text('time ='+"{:8.2f}".format(simtime)+'s')
 
- 
-    slope_flat = slope.flatten()
+    masked_slope = ma.masked_array(slope,flank_mask==0)
+    slope_flat = masked_slope[masked_slope.mask == False].flatten()
+        
+    # slope_flat = slope.flatten()
     
     """
     n, bins, patches = ax4.hist(slope_flat, weights=100.0*np.ones(len(slope_flat)) / len(slope_flat),\
@@ -146,7 +154,7 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
     # Get the histogramp
     cm = plt.cm.get_cmap('jet')
 
-    Yh,Xh = np.histogram(slope_flat)
+    Yh,Xh = np.histogram(slope_flat,density=True)
     x_span = Xh.max()-Xh.min()
     C = [cm(x/cr_angle) for x in Xh]
 
@@ -160,8 +168,8 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,plot_show_
                            cumulative=True, label='Empirical')
 
     ax4.set_xlabel('slope [degrees]')
-    ax4.set_ylabel('frequency [%]')
-    ax4b.set_ylabel('cumulative distribution')
+    ax4.set_ylabel('probability density function')
+    ax4b.set_ylabel('cumulative distribution function')
 
     frame_name = run_name + '_{0:03}'.format(iter) + '.png'
     plt.savefig(frame_name,dpi=200)
