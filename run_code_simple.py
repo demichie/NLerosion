@@ -56,6 +56,7 @@ symmetry = 'radial'
 [X, Y, h, k] = create_synth_landform(x_min, delta_x, x_max, y_min, \
                                      delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry)
 
+
 """
 # Linear case:
 run_name = 'synth_linear'
@@ -93,19 +94,42 @@ h3 = 0
 
 symmetry = 'y'
 
-[X, Y, h, k] = synth_landform(x_min, delta_x, x_max, y_min, \
+[X, Y, h, k] = create_synth_landform(x_min, delta_x, x_max, y_min, \
                               delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry)
 """
 
 # Topography from ascii raster file
 
 """
-run_name = 'SPcrater'
+run_name = 'LCN-10'
 
-ascii_file = 'sp_crater.asc'
+ascii_file = 'LCN-10Large_synth.asc'
 [X, Y, h,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
+
+mask_file = 'LCN-10Large_mask.asc'
 """
 
+
+if 'mask_file' in locals():
+
+    if os.path.isfile(mask_file):
+    
+        [X, Y, flank_mask,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(mask_file)
+
+else:
+
+    flank_mask = np.ones_like(h)
+
+current_path = os.getcwd()
+
+path = './'+run_name
+isExist = os.path.exists(path)
+
+if not isExist:
+
+    os.makedirs(path)        
+
+run_name = path+'/'+run_name    
 
 # Save initial topography on ascii raster file
 header = "ncols     %s\n" % h.shape[1]
@@ -143,23 +167,23 @@ c2 = 0.0    # no tilting along the axis orthogonal to the line alfa=0
 # Now set up model input
 # X, Y, h have been built already
 
-final_time = 1000.0   # final time in kilo years
+final_time = 100.0   # final time in kilo years
 
 delta_t_max = 10.00  # maximum time step
-delta_t0 = 0.01      # initial time step
+delta_t0 = 0.001      # initial time step
 
 cr_angle = 33.0      # critical slope in degrees
 
-enne = 2.0           # exponent for the nonlinearity of the model
+enne = 2             # exponent for the nonlinearity of the model
                      # enne = np.inf  gives a linear model
 
-#k = 1.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
+k = 1.0              # m^2/kyr; the diffusion coefficient, a scalar or a (nx,ny) array
                      # the time unit is the same of the parameter 'final_time'
 
 # The diffusion coefficient is multiplied by a relative coefficient k_rel, which
 # is defined by a Weibull cumulative distribution with parameters lambda_wb and k_wb
    
-lambda_wb = 20       # lambda_wb is the time scale parameter of the Weibull cumulative 
+lambda_wb = 0       # lambda_wb is the time scale parameter of the Weibull cumulative 
                      #   distribution (for t=lambda_wb, k_rel=(e-1)/e). If lambda_wb=0,
                      #   then k_rel is set to 1.0
                                           
@@ -201,8 +225,8 @@ A_c = A_c0 + A_c1 + A_c2
 
 verbose_level = 0   # level of output on screen (>1 for debug purposes)
 plot_output_flag = 1
-save_output_flag = 1
-plot_show_flag = 0
+save_output_flag = 0
+plot_show_flag = 1
 
 #search if another run with the same base name already exists
 i = 0
@@ -230,4 +254,6 @@ shutil.copy2('run_code_simple.py', backup_file)
     ErosioNL(X,Y,h,final_time,delta_t_max,delta_t0,              \
     cr_angle,enne,k,lambda_wb,k_wb,max_nlc,max_inner_iter, res,  \
     bc, grow_rates,run_name , n_output , A_c , verbose_level,    \
-    save_output_flag,plot_output_flag,plot_show_flag)
+    save_output_flag,plot_output_flag,plot_show_flag,flank_mask)
+    
+
