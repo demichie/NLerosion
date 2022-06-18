@@ -6,6 +6,7 @@ import numpy as np
 from create_synth_landform import create_synth_landform
 from ErosioNL import ErosioNL
 from read_asc import read_asc
+from read_asc import regrid2Dgrids
 
 # Script to run the non linear diffusion code on various initial forms
 # 2D non linear diffusion code is by
@@ -14,6 +15,8 @@ from read_asc import read_asc
 
 
 # First, build an initial form
+
+# ------------- Synthetic Cone Topography from parameters ---------------------------
 
 
 run_name = 'synth_cone'
@@ -53,9 +56,11 @@ h3 = 0
 
 symmetry = 'radial'
 
-[X, Y, h, k] = create_synth_landform(x_min, delta_x, x_max, y_min, \
+[X, Y, h, k, dist] = create_synth_landform(x_min, delta_x, x_max, y_min, \
                                      delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry)
 
+
+# ----------- End Synthetic Cone Topography from parameters -------------------------
 
 """
 # Linear case:
@@ -94,31 +99,40 @@ h3 = 0
 
 symmetry = 'y'
 
-[X, Y, h, k] = create_synth_landform(x_min, delta_x, x_max, y_min, \
+[X, Y, h, k , dist] = create_synth_landform(x_min, delta_x, x_max, y_min, \
                               delta_y, y_max,r1,r2,h1,h2,h3,a,b,symmetry)
 """
 
-# Topography from ascii raster file
+# ------------- Topography from ascii raster file ---------------------------
 
 """
-run_name = 'LCN-10'
+run_name = 'LCN-3'
 
-ascii_file = 'LCN-10Large_synth.asc'
-[X, Y, h,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
+ascii_file = 'LCN-3_synth.asc'
+mask_file = 'LCN-3_mask.asc'
 
-mask_file = 'LCN-10Large_mask.asc'
+# [X, Y, h,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file)
+
+cellsize = 2.0
+[X, Y, h,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(ascii_file,cellsize)
 """
 
+# ----------- end topography from ascii raster file -------------------------
+
+flank_mask = np.ones_like(h)
 
 if 'mask_file' in locals():
 
     if os.path.isfile(mask_file):
     
-        [X, Y, flank_mask,x_min,x_max,delta_x,y_min,y_max,delta_y] = read_asc(mask_file)
+        [Xm, Ym, flank_mask,xm_min,xm_max,delta_xm,ym_min,ym_max,delta_ym] = read_asc(mask_file)
+        
+        # regrid to the same grid of elevation         
+        flank_mask = regrid2Dgrids(Xm,Ym,flank_mask,X,Y)
+        flank_mask[flank_mask == -9999] = np.nan
+        dist = flank_mask
 
-else:
 
-    flank_mask = np.ones_like(h)
 
 current_path = os.getcwd()
 
@@ -167,7 +181,7 @@ c2 = 0.0    # no tilting along the axis orthogonal to the line alfa=0
 # Now set up model input
 # X, Y, h have been built already
 
-final_time = 100.0   # final time in kilo years
+final_time = 1000.0   # final time in kilo years
 
 delta_t_max = 10.00  # maximum time step
 delta_t0 = 0.001      # initial time step
@@ -208,7 +222,7 @@ gr = 0.0
 grow_rates = [ gr, gr, gr, gr]  # rate of change at the boundaries
                              # Used only when the b.c. is 'T'
 
-n_output = 10  # number of output plotted
+n_output = 40  # number of output plotted
 
 
 
@@ -254,6 +268,7 @@ shutil.copy2('run_code_simple.py', backup_file)
     ErosioNL(X,Y,h,final_time,delta_t_max,delta_t0,              \
     cr_angle,enne,k,lambda_wb,k_wb,max_nlc,max_inner_iter, res,  \
     bc, grow_rates,run_name , n_output , A_c , verbose_level,    \
-    save_output_flag,plot_output_flag,plot_show_flag,flank_mask)
+    save_output_flag,plot_output_flag,plot_show_flag,flank_mask, \
+    dist)
     
 

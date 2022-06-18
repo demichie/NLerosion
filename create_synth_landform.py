@@ -13,6 +13,7 @@ def create_synth_landform(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,
 
 
     h = np.zeros((ny,nx)) # initialization of the array of the altitudes
+    dist = np.zeros((ny,nx)) # initialization of the array of the altitudes
 
     for i in range(0,nx):
 
@@ -21,14 +22,17 @@ def create_synth_landform(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,
             if ( symmetry == 'radial' ):
 
                 r = np.sqrt(x[i]**2/a**2+y[j]**2/b**2)
+                dist[j,i] = np.sqrt( x[i]**2 + y[j]**2 )
 
             elif ( symmetry == 'y'):
 
                 r = x[i]/a
+                dist[j,i] = x[i]
 
             elif ( symmetry == 'x'):
 
                 r = y(j)/b
+                dist[j,i] = y[j]
 
             else:
 
@@ -50,6 +54,7 @@ def create_synth_landform(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,
 
                 h[j,i] = h3
 
+            
 
     # diffusion coefficient
 
@@ -97,4 +102,4 @@ def create_synth_landform(x_min, delta_x, x_max, y_min, delta_y, y_max,r1,r2,h1,
                 k[j,i] = k1
 
 
-    return (X, Y,h,k)
+    return (X, Y,h,k,dist)

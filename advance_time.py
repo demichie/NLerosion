@@ -285,7 +285,7 @@ def advance_time(h_init, h_old, delta_t, delta_x, delta_y, lambda_wb, k_wb,
 
     h_new[0:ny, 0:nx] = 1.0 * h_temp[0:ny, 0:nx]
 
-    return [h_new[0:ny, 0:nx], residual]
+    return [h_new[0:ny, 0:nx], residual,inner_iter]
 
 
 def NEWsolver(a, b, c, d):

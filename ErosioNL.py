@@ -1,7 +1,7 @@
 def ErosioNL(X, Y, h, final_time, delta_t_max, delta_t0, cr_angle, enne, k,
              lambda_wb, k_wb, max_nlc, max_inner_iter, res, bc, grow_rate,
              run_name, n_output, A_c, verbose_level, save_output_flag,
-             plot_output_flag, plot_show_flag,flank_mask):
+             plot_output_flag, plot_show_flag,flank_mask,dist):
 
     # EROSIONL This function solve for the nonlinear diffusion problem
     #
@@ -87,7 +87,7 @@ def ErosioNL(X, Y, h, final_time, delta_t_max, delta_t0, cr_angle, enne, k,
     if (plot_output_flag):
 
         make_plot(X, Y, h, h_init, h_min, h_max, simtime, cr_angle, run_name,
-                  iter, plot_show_flag,flank_mask)
+                  iter, plot_show_flag,flank_mask,dist)
 
     if (save_output_flag):
 
@@ -271,20 +271,21 @@ def ErosioNL(X, Y, h, final_time, delta_t_max, delta_t0, cr_angle, enne, k,
 
             # first half step
 
-            (h_temp[0:ny, 0:nx], residual) = \
+            (h_temp[0:ny, 0:nx], residual,n_iter1) = \
                 advance_time(h_old[0:ny, 0:nx], h_old[0:ny, 0:nx], delta_t,
                              delta_x, delta_y, lambda_wb, k_wb, S_c, enne,
                              k, max_nlc, max_inner_iter, res, Dirichlet,
                              Transient, Neumann, grow_rate, A_c, simtime,
                              verbose_level)
 
-            # print '1st half ',np.min(h_temp),np.max(h_temp)
+            if (verbose_level >= 1):
+                print('1st half ',residual,n_iter1)
 
             # second half step
 
             h_guess = h_temp + (h_temp - h_old)
 
-            (h_new[0:ny, 0:nx], residual) = \
+            (h_new[0:ny, 0:nx], residual,n_iter2) = \
                 advance_time(h_guess[0:ny, 0:nx], h_temp[0:ny, 0:nx], delta_t,
                              delta_x, delta_y, lambda_wb, k_wb, S_c, enne, k,
                              max_nlc, max_inner_iter, res, Dirichlet,
@@ -293,24 +294,26 @@ def ErosioNL(X, Y, h, final_time, delta_t_max, delta_t0, cr_angle, enne, k,
 
             h_temp_half[0:ny, 0:nx] = h_new[0:ny, 0:nx]
 
-            # print '1st half ',np.min(h_temp),np.max(h_temp)
-            # print '2nd half ',np.min(h_temp_half),np.max(h_temp_half)
+            if (verbose_level >= 1):
+
+                print('2nd half ',residual,n_iter2)
 
             # integration with one full step
 
             delta_t = delta_t_orig
 
             h_guess[0:ny, 0:nx] = h_temp_half[0:ny, 0:nx]
-
-            (h_temp_full[0:ny, 0:nx], residual) = \
+            
+            (h_temp_full[0:ny, 0:nx], residual,n_iter3) = \
                 advance_time(h_guess[0:ny, 0:nx], h_old[0:ny, 0:nx], delta_t,
                              delta_x, delta_y, lambda_wb, k_wb, S_c, enne, k,
-                             max_nlc, max_inner_iter, res, Dirichlet,
+                             max_nlc, n_iter1+n_iter2+2, res, Dirichlet,
                              Transient, Neumann, grow_rate, A_c, simtime,
                              verbose_level)
 
-            # print '2nd half ',np.min(h_temp_half),np.max(h_temp_half)
-            # print 'full step ',np.min(h_temp_full),np.max(h_temp_full)
+            if (verbose_level >= 1):
+
+                print('full step ',residual,n_iter3)
 
             # check the error
 
@@ -379,7 +382,7 @@ def ErosioNL(X, Y, h, final_time, delta_t_max, delta_t0, cr_angle, enne, k,
 
                 time_text = make_plot(X, Y, h, h_init, h_min, h_max, simtime,
                                       cr_angle, run_name, iter, plot_show_flag,
-                                      flank_mask)
+                                      flank_mask,dist)
 
             if (save_output_flag):
 

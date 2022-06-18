@@ -1,5 +1,5 @@
 def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,
-              plot_show_flag,flank_mask):
+              plot_show_flag,flank_mask,dist):
 
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
@@ -9,6 +9,7 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,
     import numpy as np
     from matplotlib.colors import LightSource
     import numpy.ma as ma
+    import pandas as pd
     
     import imp
 
@@ -66,7 +67,12 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,
                  dx=delta_x,dy=delta_y),cmap='gray',extent=extent,
                  origin='lower') 
 
-    ax1.imshow(flank_mask,cmap='gray',extent=extent,alpha=0.1,
+    if(np.isnan(flank_mask).any()):
+    
+        flank_plot = np.zeros_like(flank_mask)
+        flank_plot[flank_mask>0] = 1.0
+
+        ax1.imshow(flank_plot,cmap='gray',extent=extent,alpha=0.2,
                  origin='lower') 
                                         
     nx = X.shape[1]
@@ -130,25 +136,41 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,
     time_text.set_position((x_min+0.05*(x_max-x_min), y_min+0.9*(y_max-y_min)))
     time_text.set_text('time ='+"{:8.2f}".format(simtime)+'s')
 
-    masked_slope = ma.masked_array(slope,flank_mask==0)
+    flank_dist = np.zeros_like(flank_mask)
+    flank_dist[flank_mask>0] = dist[flank_mask>0]
+
+    masked_slope = ma.masked_array(slope,flank_dist == 0)
     slope_flat = masked_slope[masked_slope.mask == False].flatten()
+     
+    masked_dist = ma.masked_array(flank_dist, flank_dist == 0)
+    dist_flat = masked_dist[masked_dist.mask == False].flatten()
+
+    df = pd.DataFrame({'dist': dist_flat, 'slope': slope_flat})
+
+    n_dist = 10
+    # create the bins (intervals) for the sectors based on the distance
+    dist_bins = np.linspace(np.min(dist_flat), np.max(dist_flat),
+                                n_dist + 1)
+    dist_half = 0.5 * (dist_bins[0:-1] + dist_bins[1:])
+
+    # print('dist_bins', dist_bins)
+
+    # group the dataframe elements in sub-domains by using partition
+    groups = df.groupby([pd.cut(df.dist, dist_bins)])
+
+    # compute the mean slope in each sub-domain. It is a 2D numpy array
+    slp_mean = np.array(groups['slope'].mean())
+    slp_std = np.array(groups['slope'].std())
+
+    # print('slp_mean', slp_mean)
+    # print('slp_std', slp_std)
         
-    # slope_flat = slope.flatten()
-    
-    """
-    n, bins, patches = ax4.hist(slope_flat, weights=100.0*np.ones(len(slope_flat)) / len(slope_flat),\
-             histtype='stepfilled', alpha=0.2)
-             
-    bin_centers = 0.5 * (bins[:-1] + bins[1:])
-
-    # scale values to interval [0,1]
-    col = bin_centers - min(bin_centers)
-    col /= max(col)
-
-    cm = plt.cm.get_cmap('RdYlBu_r')
-    
-    for c, p in zip(col, patches):
-        plt.setp(p, 'facecolor', cm(c))   
+    ax4.errorbar(dist_half, slp_mean, yerr=slp_std)
+    ax4.set_xlabel('distance from top [m]')
+    ax4.set_ylabel('slope [degrees]')
+    ax4.set_ylim(0,35)
+                
+ 
     """
         
     # Get the histogramp
@@ -170,6 +192,8 @@ def make_plot(X,Y,Z,Z_init,h_min,h_max,simtime,cr_angle,run_name,iter,
     ax4.set_xlabel('slope [degrees]')
     ax4.set_ylabel('probability density function')
     ax4b.set_ylabel('cumulative distribution function')
+
+    """
 
     frame_name = run_name + '_{0:03}'.format(iter) + '.png'
     plt.savefig(frame_name,dpi=200)
